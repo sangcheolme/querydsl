@@ -4,7 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
-@Profile({"default", "test"})
+@Profile({"default", "test", "local"})
 @Configuration
 public class P6SpyConfig {
 
