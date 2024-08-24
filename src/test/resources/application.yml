@@ -1,0 +1,12 @@
+spring:
+  profiles:
+    active: test
+
+logging:
+  level:
+    p6spy: info
+
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: true
