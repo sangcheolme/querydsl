@@ -21,4 +21,5 @@ public class MemberTeamDto {
         this.teamId = teamId;
         this.teamName = teamName;
     }
+
 }

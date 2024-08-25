@@ -27,7 +27,7 @@ public class MemberController {
 
     @GetMapping("/v2/members")
     public Page<MemberTeamDto> searchMemberV2(MemberSearchCond condition, Pageable pageable) {
-        return memberRepository.searchPageSimple(condition, pageable);
+        return memberRepository.searchPageComplex(condition, pageable);
     }
 
 }

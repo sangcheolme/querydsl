@@ -9,9 +9,12 @@ import java.util.List;
 import jakarta.persistence.EntityManager;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
 import org.springframework.data.support.PageableExecutionUtils;
 
+import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -19,18 +22,20 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import study.querydsl.dto.MemberSearchCond;
 import study.querydsl.dto.MemberTeamDto;
 import study.querydsl.dto.QMemberTeamDto;
+import study.querydsl.entity.Member;
 
-public class MemberRepositoryImpl implements MemberRepositoryCustom {
+public class MemberRepositoryImpl extends QuerydslRepositorySupport implements MemberRepositoryCustom {
 
     private final JPAQueryFactory queryFactory;
 
     public MemberRepositoryImpl(EntityManager em) {
+        super(Member.class);
         this.queryFactory = new JPAQueryFactory(em);
     }
 
     @Override
-
     public List<MemberTeamDto> search(MemberSearchCond condition) {
+
         return queryFactory
             .select(new QMemberTeamDto(
                 member.id.as("memberId"),
@@ -52,6 +57,35 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom {
 
     @Override
     public Page<MemberTeamDto> searchPageSimple(MemberSearchCond condition, Pageable pageable) {
+        // paging query
+        QueryResults<MemberTeamDto> result = queryFactory
+            .select(new QMemberTeamDto(
+                member.id.as("memberId"),
+                member.username,
+                member.age,
+                team.id.as("teamId"),
+                team.name.as("teamName")
+            ))
+            .from(member)
+            .leftJoin(member.team, team)
+            .where(
+                usernameEq(condition.getUsername()),
+                teamNameEq(condition.getTeamName()),
+                ageGoe(condition.getAgeGoe()),
+                ageLoe(condition.getAgeLoe())
+            )
+            .offset(pageable.getOffset())
+            .limit(pageable.getPageSize())
+            .fetchResults();
+
+        List<MemberTeamDto> content = result.getResults();
+        long count = result.getTotal();
+
+        return new PageImpl<>(content, pageable, count);
+    }
+
+    @Override
+    public Page<MemberTeamDto> searchPageComplex(MemberSearchCond condition, Pageable pageable) {
         // paging query
         List<MemberTeamDto> content = queryFactory
             .select(new QMemberTeamDto(
@@ -86,11 +120,6 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom {
             );
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
-    }
-
-    @Override
-    public Page<MemberTeamDto> searchPageComplex(MemberSearchCond condition, Pageable pageable) {
-        return null;
     }
 
     private BooleanExpression usernameEq(String username) {
